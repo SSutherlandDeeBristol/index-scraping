@@ -1,10 +1,15 @@
 import urllib.request
 from bs4 import BeautifulSoup
-from collections import defaultdict
+import databaseutils as dbutils
 
-indices = defaultdict(list)
+connection = None
+
+def insert_data_into_db(connection, data):
+    for index in data:
+        dbutils.add_index(connection, index)
 
 def extract_market_data(soup):
+    data = {}
     trs = soup.find_all('tr')
 
     for tr in trs:
@@ -32,13 +37,13 @@ def extract_market_data(soup):
                     value = div.get_text()
 
                 if index_name is not '':
-                    indices[index_name] = value
+                    data[index_name] = value
+
+    return data
 
 def soupify_page():
-    with open("webpage.html") as fp:
-        soup = BeautifulSoup(fp, 'html.parser')
+    soup = BeautifulSoup(open("webpage.html"), 'html.parser')
 
-    #soup = BeautifulSoup('webpage.html', 'html.parser')
     return soup
 
 def download_page():
@@ -47,8 +52,15 @@ def download_page():
     urllib.request.urlretrieve(url, 'webpage.html')
 
 if __name__ == '__main__':
-    download_page()
-    soup = soupify_page()
-    extract_market_data(soup)
+    connection = dbutils.create_connection('indexdatabase.db')
 
-    print(str(indices))
+    with connection:
+        dbutils.create_tables(connection)
+
+        download_page()
+        soup = soupify_page()
+        data = extract_market_data(soup)
+
+        insert_data_into_db(connection, data)
+
+    print(str(data))
