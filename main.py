@@ -1,12 +1,14 @@
 import urllib.request
 from bs4 import BeautifulSoup
 import databaseutils as dbutils
+import datetime
 
 connection = None
 
 def insert_data_into_db(connection, data):
     for index in data:
         dbutils.add_index(connection, index)
+        dbutils.add_tracking(connection, index, data[index])
 
 def extract_market_data(soup):
     data = {}
@@ -25,6 +27,7 @@ def extract_market_data(soup):
                     spans = a.find_all('span')
                     if spans is not None:
                         index_name = spans[0].get_text()
+                        data.setdefault(index_name, [])
 
         tds = tr.find_all('td')
         value = ''
@@ -37,7 +40,10 @@ def extract_market_data(soup):
                     value = div.get_text()
 
                 if index_name is not '':
-                    data[index_name] = value
+                    data[index_name].append(value)
+
+                    time = datetime.datetime.now().isoformat()
+                    data[index_name].append(time.replace('T', ' ')[:-7])
 
     return data
 

@@ -15,11 +15,27 @@ sql_create_tables = [""" CREATE TABLE IF NOT EXISTS indices (
                      ); """]
 
 def add_index(connection, index):
-    sql = ''' INSERT OR IGNORE INTO indices(name)
+    add_index_sql = ''' INSERT OR IGNORE INTO indices(name)
               VALUES(?) '''
 
     cur = connection.cursor()
-    cur.execute(sql, (index,))
+    cur.execute(add_index_sql, (index,))
+
+    return cur.lastrowid
+
+def add_tracking(connection, index, data):
+    value = data[0]
+    time = data[1]
+
+    cur = connection.cursor()
+
+    index_id_sql = ''' SELECT index_id FROM indices WHERE name = ?'''
+    index_id = cur.execute(index_id_sql, (index,)).fetchall()[0][0]
+
+    add_tracking_sql = ''' INSERT OR IGNORE INTO tracking(date, value, index_id)
+              VALUES(?,?,?) '''
+
+    cur.execute(add_tracking_sql, (time,value,index_id))
 
     return cur.lastrowid
 
